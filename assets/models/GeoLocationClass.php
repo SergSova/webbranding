@@ -11,13 +11,16 @@
      */
     class GeoLocation extends Base
     {
+        protected static
+            $instance = null;
+
         public $words;
         const DB_NAME = 'geolocation';
         const DB_FILTER_NAME = 'geo_filters';
         const className = 'geolocation';
         const filter_fields = array('id', 'geo_id', 'parent');
 
-        private $_filters = array();
+        protected $_filters = array();
 
         public function getFilters()
         {

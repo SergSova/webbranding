@@ -25,26 +25,24 @@
         protected function __construct()
         {
             $this->words = array();
-            $db_conf = new db();
-            $this->link = mysqli_connect($db_conf->host, $db_conf->user, $db_conf->pass, $db_conf->db_name);
+            $this->link = mysqli_connect(db::$HOST, db::$USER, db::$PASS, db::$DB_NAME);
             $this->link->set_charset("utf8");
-            $res = mysqli_query($this->link, "SELECT ".join(',', self::fields)." FROM ".self::DB_NAME);
+            $res = mysqli_query($this->link, "SELECT ".join(',', self::fields)." FROM ".static::DB_NAME);
             for ($row_no = $res->num_rows - 1; $row_no >= 0; $row_no--) {
                 $res->data_seek($row_no);
                 $row = $res->fetch_assoc();
                 $this->words[$row[self::fields[0]]] = mb_strtolower($row[self::fields[1]]);
             }
-            $_SESSION[self::className] = serialize($this);
+            $_SESSION[static::className] = serialize($this);
 
-            if (self::DB_FILTER_NAME) {
-                $filt_res = mysqli_query($this->link, "SELECT ".join(',', self::filter_fields)." FROM ".self::DB_FILTER_NAME);
+            if (static::DB_FILTER_NAME) {
+                $filt_res = mysqli_query($this->link, "SELECT ".join(',', static::filter_fields)." FROM ".static::DB_FILTER_NAME);
                 for ($row_no = $filt_res->num_rows - 1; $row_no >= 0; $row_no--) {
                     $filt_res->data_seek($row_no);
                     $row = $filt_res->fetch_assoc();
                     $this->_filters[$row['parent']][] = $row['geo_id'];
                 }
             }
-
         }
 
         public function __destruct()
@@ -56,31 +54,32 @@
 
 
         /**
-         * @return self
+         * @return static
          */
         public static function getInstance()
         {
-            if (null === self::$instance) {
-                self::$instance = new static();
-            } elseif ($_SESSION[self::className]) {
-                self::$instance = unserialize($_SESSION[static::className]);
+            if (null === static::$instance) {
+                static::$instance = new static();
+            } elseif ($_SESSION[static::className]) {
+                static::$instance = unserialize($_SESSION[static::className]);
             }
-            if ($reg_excl = $_POST[self::DB_NAME]) {
+
+            if ($reg_excl = $_POST[static::DB_NAME]) {
                 if ($reg_excl == '#') {
-                    unset($_SESSION[self::DB_NAME]);
+                    unset($_SESSION[static::DB_NAME]);
                 } else {
-                    $_SESSION[self::DB_NAME] = $reg_excl;
+                    $_SESSION[static::DB_NAME] = $reg_excl;
                     /*заменить значения из чекбоксов на слова*/
                     array_walk(
-                        $_SESSION[self::DB_NAME],
+                        $_SESSION[static::DB_NAME],
                         function (&$item, $key) {
-                            $item = self::$instance->words[$key];
+                            $item = static::$instance->words[$key];
                         }
                     );
                 }
             }
 
-            return self::$instance;
+            return static::$instance;
         }
 
     }

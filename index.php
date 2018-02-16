@@ -6,7 +6,7 @@
      * Time: 13:16
      */
     session_start();
-        session_reset();
+    session_unset();
     mb_internal_encoding("UTF-8");
 
     error_reporting(E_ALL & ~(E_DEPRECATED | E_NOTICE));

@@ -12,6 +12,8 @@
         const DB_NAME = 'excluded_words';
         const className = 'excluded';
 
+        protected static
+            $instance = null;
 
         public function getWord()
         {

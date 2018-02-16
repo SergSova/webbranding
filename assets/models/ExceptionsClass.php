@@ -12,4 +12,6 @@
         const DB_NAME = 'exceptions_lems';
         const className = 'exceptions';
 
+        protected static
+            $instance = null;
     }
