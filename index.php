@@ -6,7 +6,7 @@
      * Time: 13:16
      */
     session_start();
-    session_unset();
+    //    session_unset();
     mb_internal_encoding("UTF-8");
 
     error_reporting(E_ALL & ~(E_DEPRECATED | E_NOTICE));
@@ -21,7 +21,7 @@
 
     $site_name = 'WebBranding';
 
-        /**
+    /**
      * @return array
      */
     function getTextArray($index = 0, $limit = 0, $offset = 0)
@@ -29,6 +29,7 @@
         $lim = $limit;
         $off = $offset;
         $arr_obj = include 'read_xlsx.php';
+
         return $arr_obj;
     }
 
@@ -128,17 +129,17 @@
                     }
                 }
 
-                if ($link->errno) {
-                    $title = 'Error';
-                    $message = $link->error;
-                    $m_class = 'error';
-                } else {
-                    $message = 'Done';
-                    $m_class = 'success';
-                    $title = $site_name;
-                }
+//                if ($link->errno) {
+//                    $title = 'Error';
+//                    $message = $link->error;
+//                    $m_class = 'error';
+//                } else {
+//                    $message = 'Done';
+//                    $m_class = 'success';
+//                    $title = $site_name;
+//                }
 
-                $link->close();
+//                $link->close();
                 $_SESSION['res_obj'] = serialize($res_obj);
 
                 break;
@@ -246,6 +247,6 @@
 </div>
 <script src="assets/js/lib/jquery.min.js"></script>
 <script>
-    textCount = 1000;//<?=count($texts)?>;
+    textCount = 1000; //<?= is_array($res_obj->lems) ? count($texts) : ''?>;
 </script>
 <script src="assets/js/main.js"></script>

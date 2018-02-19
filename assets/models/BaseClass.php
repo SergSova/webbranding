@@ -6,7 +6,7 @@
      * Time: 15:15
      */
 
-    class Base
+    class Base extends db
     {
         const DB_NAME = '';
         const className = '';
@@ -14,19 +14,18 @@
         const filter_fields = '';
         const DB_FILTER_NAME = '';
 
-        protected $link;
 
         protected static
-            $instance = null;
+            $instance;
 
         /**
          * Base constructor.
          */
         protected function __construct()
         {
+            parent::__construct();
             $this->words = array();
-            $this->link = mysqli_connect(db::$HOST, db::$USER, db::$PASS, db::$DB_NAME);
-            $this->link->set_charset("utf8");
+//            $this->link = db::getLink();
             $res = mysqli_query($this->link, "SELECT ".join(',', self::fields)." FROM ".static::DB_NAME);
             for ($row_no = $res->num_rows - 1; $row_no >= 0; $row_no--) {
                 $res->data_seek($row_no);
@@ -42,13 +41,6 @@
                     $row = $filt_res->fetch_assoc();
                     $this->_filters[$row['parent']][] = $row['geo_id'];
                 }
-            }
-        }
-
-        public function __destruct()
-        {
-            if ($this->link) {
-                $this->link->close();
             }
         }
 
