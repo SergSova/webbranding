@@ -85,3 +85,7 @@
 .window-fixed p span {
     text-align: right;
 }
+
+.excl, .to-geo {
+    cursor: pointer;
+}

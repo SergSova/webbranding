@@ -1,6 +1,6 @@
 <?php
-
-    class db
+    namespace models;
+    class DbConnect
     {
 
         static private $HOST = 'localhost';
@@ -12,7 +12,7 @@
         protected static $instance = null;
         protected function __construct()
         {
-            $this->link = mysqli_connect(db::$HOST, db::$USER, db::$PASS, db::$DB_NAME);
+            $this->link = mysqli_connect(self::$HOST, self::$USER, self::$PASS, self::$DB_NAME);
             $this->link->set_charset("utf8");
         }
 

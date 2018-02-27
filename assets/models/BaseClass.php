@@ -6,7 +6,9 @@
      * Time: 15:15
      */
 
-    class Base extends db
+    namespace models;
+
+    class Base extends DbConnect
     {
         const DB_NAME = '';
         const className = '';
@@ -25,7 +27,6 @@
         {
             parent::__construct();
             $this->words = array();
-//            $this->link = db::getLink();
             $res = mysqli_query($this->link, "SELECT ".join(',', self::fields)." FROM ".static::DB_NAME);
             for ($row_no = $res->num_rows - 1; $row_no >= 0; $row_no--) {
                 $res->data_seek($row_no);
@@ -71,7 +72,32 @@
                 }
             }
 
+            if (static::className == 'geolocation' && $reg_excl = $_POST['include_geo']) {
+                if ($reg_excl == '#') {
+                    unset($_SESSION['include_geo']);
+                } else {
+                    $_SESSION['include_geo'] = $reg_excl;
+                    array_walk(
+                        $_SESSION['include_geo'],
+                        function (&$item, $key) {
+                            $item = static::$instance->words[$key];
+                        }
+                    );
+                }
+            }
+
             return static::$instance;
         }
 
+
+        public function insert($word)
+        {
+            if (in_array($word, $this->words)) {
+                return false;
+            }
+            $result = mysqli_query($this->link, "INSERT INTO ".static::DB_NAME." (word) VALUE ('".$word."')");
+            if ($result) {
+                return mysqli_insert_id($this->link);
+            }
+        }
     }

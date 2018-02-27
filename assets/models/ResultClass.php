@@ -1,4 +1,7 @@
 <?php
+
+    namespace models;
+
     /**
      * Created by PhpStorm.
      * User: Chepur
@@ -20,13 +23,23 @@
             }
             $this->lems = array();
             $this->geo = array();
+
+            return $this;
+        }
+
+
+        public function toJSON()
+        {
+//            $this->jSorting($this->lems);
+//            $this->jSorting($this->geo);
+
+            return json_encode($this);
         }
 
         public function geo_exists($word)
         {
             return array_key_exists($word, $this->geo);
         }
-
 
         /**
          * @param $word
@@ -79,6 +92,9 @@
         {
             $lema = $this->getLem($word);
             $lema->word = $word;
+            if ($morph == null) {
+                $morph = array();
+            }
             $lema->morph = $morph;
             $lema->count++;
             $lema->addText($text);
@@ -91,12 +107,30 @@
         {
             $lema = $this->getGeo($word);
             $lema->word = $word;
+            if ($morph == null) {
+                $morph = array();
+            }
             $lema->morph = $morph;
             $lema->count++;
             $lema->addText($text);
 
             return $lema;
 
+        }
+
+
+        protected function jSorting(&$arr)
+        {
+            usort(
+                $arr,
+                function ($a, $b) {
+                    /**
+                     * @var Lems $a
+                     * @var Lems $b
+                     */
+                    return $a->count < $b->count;
+                }
+            );
         }
 
     }

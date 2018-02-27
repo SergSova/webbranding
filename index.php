@@ -5,6 +5,11 @@
      * Date: 20.12.2017
      * Time: 13:16
      */
+    namespace models;
+
+    use Exception;
+    use phpMorphy;
+
     session_start();
     //    session_unset();
     mb_internal_encoding("UTF-8");
@@ -24,84 +29,27 @@
     /**
      * @return array
      */
-    function getTextArray($index = 0, $limit = 0, $offset = 0)
+    function getTextArray()
     {
-        $lim = $limit;
-        $off = $offset;
-        $arr_obj = include 'read_xlsx.php';
-
+        $file =  new ReadFile();
+        $arr_obj = $file->read()->getResult();
         return $arr_obj;
     }
 
     try {
         $morphy = new phpMorphy($dir, $lang, $opts);
-        $exceptions_ = $exclude_ = array();
-
-//        $link = mysqli_connect($db_conf->host, $db_conf->user, $db_conf->pass, $db_conf->db_name);
-//        $link->set_charset("utf8");
-
         $filter_obj = new Filter();
-
-//        if ($reg_excl = $_POST[Excluded::DB_NAME]) {
-//            if ($reg_excl == '#') {
-//                unset($_SESSION[Excluded::DB_NAME]);
-//            } else {
-//                $_SESSION[Excluded::DB_NAME] = $reg_excl;
-//                /*заменить значения из чекбоксов на слова*/
-//                array_walk($_SESSION[Excluded::DB_NAME],
-//                    function (&$item, $key) use ($filter_obj) {
-//                        $item = $filter_obj->excluded->words[$key];
-//                    }
-//                );
-//            }
-//        }
-
-        if ($reg_excl = $_POST['include_geo']) {
-            if ($reg_excl == '#') {
-                unset($_SESSION['include_geo']);
-            } else {
-                $_SESSION['include_geo'] = $_POST['include_geo'];
-            }
-        }
-
-        if ($del_excl = $_POST['excl_del_id']) {
-            mysqli_query($link, "DELETE FROM excluded_words WHERE id = $del_excl");
-        }
-        //endregion
-
-        if ($_POST['is_geo_data']) {
-            if ($_POST['is_geo_data'] == '#') {
-                $_SESSION['is_geo_data'] = false;
-            } else {
-                $_SESSION['is_geo_data'] = $_POST['is_geo_data'];
-            }
-        }
-
-        //region Select exceptions
-        if ($get_except = $_POST['exception']) {
-            $get_except = mb_strtolower($get_except);
-            mysqli_query($link, "INSERT INTO exceptions_lems(word,lema) VALUE ('$get_except','$get_except')");
-        }
-        if ($del_except = $_POST['except_del_id']) {
-            mysqli_query($link, "DELETE FROM exceptions_lems WHERE id = $del_except");
-        }
-        //endregion
-
 
         switch ($_POST['working']) {
             case 'Work':
-                $texts = json_decode($_SESSION['text']);
-
-                $res_obj = new Result();
-
-                if ($_SESSION['res_obj']) {
-                    $res_obj = unserialize($_SESSION['res_obj']);
-                }
+                $arr_obj = getTextArray();
+                $texts = $arr_obj['text'];
+                $res_obj = $_SESSION['res_obj'] ? unserialize($_SESSION['res_obj']) : new Result();
 
                 if ($_POST['offset'] <= count($texts) && $_POST['is_last'] == 'false') {
                     $arr = array_slice($texts, $_POST['offset'], $_POST['limit']);
                 } else {
-                    die(json_encode($res_obj));
+                    die($res_obj->toJSON());
                 }
 
                 foreach ($arr as $id => $text) {
@@ -129,23 +77,14 @@
                     }
                 }
 
-//                if ($link->errno) {
-//                    $title = 'Error';
-//                    $message = $link->error;
-//                    $m_class = 'error';
-//                } else {
-//                    $message = 'Done';
-//                    $m_class = 'success';
-//                    $title = $site_name;
-//                }
-
-//                $link->close();
                 $_SESSION['res_obj'] = serialize($res_obj);
+
+                if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                    return include 'assets/templates/lems_wrap.tpl';
+                }
 
                 break;
             case 'Clear':
-//                $link = mysqli_connect($db_conf->host, $db_conf->user, $db_conf->pass, $db_conf->db_name);
-//                if (mysqli_query($link, 'CALL clear_all')) {
                 $message = 'all Cleared';
                 $m_class = 'clear';
                 unset($_SESSION['is_geo_data']);
@@ -154,39 +93,20 @@
                 unset($_SESSION['geolocation']);
                 unset($_SESSION['excluded']);
                 unset($_SESSION['undefined']);
-                session_destroy();
-                $arr_obj = getTextArray();
+                session_unset();
                 break;
-            case 'ChangeToGeo':
-                $link->begin_transaction(MYSQLI_TRANS_START_READ_WRITE);
-                $_word = $_POST['geoName'];
-                $sql_geo = "Insert into geolocation(word) VALUE ('$_word')";
-                mysqli_query($link, $sql_1);
-                $geo_id = mysqli_insert_id($link);
-
-                $sql_1 = "Select * from lems1 WHERE word='$_word'";
-                $resp = mysqli_query($link, $sql_1);
-                $row = $resp->fetch_assoc();
-
-                $lem_id = $row['id'];
-                $geo_lema = $row['lema'];
-                $morph = $row['morph'];
-                $count = $row['count'];
-                $text = $row['text'];
-
-                $sql_2 = "INSERT INTO geo1(word,lema,morph,count,text,geo_id) VALUES ('$_word','$geo_lema','$morph', $count,'$text', $geo_id)";
-                mysqli_query($link, $sql_2);
-
-                $sql_3 = "Delete from lems1 WHERE id=$lem_id";
-                mysqli_query($link, $sql_3);
-
-                $link->commit();
+            case 'addExc':
+                echo $filter_obj->excluded->insert($_POST['word']);
+                return;
+                break;
+            case 'addGeo':
+                echo $filter_obj->geo_location->insert($_POST['word']);
+                return;
                 break;
             default:
                 $title = 'Choose ';
-                $arr_obj = getTextArray();
+//                $arr_obj = getTextArray();
         }
-//        $link->close();
     } catch (Exception $e) {
         die('Error occured while creating phpMorphy instance: '.$e->getMessage());
     }
@@ -237,16 +157,20 @@
         <input class="work-btn" type="submit" name="working" value="Work">
         <input type="submit" name="working" value="Clear">
         <input type="button" class="stop-btn" value="Stop">
-        <p><input type="checkbox" name="saved" <?= $_POST['saved'] == 1 ? 'checked' : '' ?> >Записать в базу</p>
+        <p><label>
+                <input type="checkbox" name="saved" <?= $_POST['saved'] == 1 ? 'checked' : '' ?> >
+                Записать в базу</label>
+        </p>
 
         <!--        <input type="submit" name="working" value="Clear_session">-->
     </form>
-    <?php //include 'assets/templates/texts.tpl'?>
+    <?php //include 'assets/templates/texts.tpl'
+    ?>
 
     <?php include 'assets/templates/lems_wrap.tpl' ?>
 </div>
 <script src="assets/js/lib/jquery.min.js"></script>
 <script>
-    textCount = 1000; //<?= is_array($res_obj->lems) ? count($texts) : ''?>;
+    textCount = 200; // <?= $arr_obj['count']?>;
 </script>
 <script src="assets/js/main.js"></script>

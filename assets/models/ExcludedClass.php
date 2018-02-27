@@ -5,7 +5,7 @@
      * Date: 16.02.2018
      * Time: 15:15
      */
-
+    namespace models;
     class Excluded extends Base
     {
         public $words;
@@ -23,4 +23,6 @@
 
             return $this->words;
         }
+
+
     }

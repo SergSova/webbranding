@@ -86,21 +86,25 @@ $(function () {
             data.push({name: "working", value: 'Work'});
             data.push({name: "is_last", value: is_last});
 
+            $('.work-btn').attr('disabled', 'disabled');
             $.ajax({
                 type: "post",
                 data: data,
                 success: function (resp) {
                     if (is_last) {
+                        offset = 0;
                         k = JSON.parse(resp);
+                        $('.lems').html(' ');
+                        $('.geo-lems').html('');
                         objPArse('lems', '.lems');
                         objPArse('geo', '.geo-lems');
                         console.log('end');
                         is_stop = true;
                         return;
                     }
-                    var message = $(resp).find('.message-wrap ');
+                    var message = $('.message-wrap');
                     offset += limit;
-                    message.find('.message').html(message.find('.message').html() + ' ' + offset + ' from ' + textCount);
+                    message.find('.message').html(offset + ' from ' + textCount);
                     $('.message-wrap').html(message.html());
                 },
                 complete: sendReq
@@ -111,7 +115,22 @@ $(function () {
 
     function objPArse(z, obj) {
         for (key in k[z]) {
-            $(obj).append('<div>\n    <span class="lemma-' + z + '" data-obj="' + z + '">' + key + '(' + k[z][key]['count'] + ')</span> <span class="excl">exc</span>/<span class="to-geo">geo</span>\n</div>')
+            var div = $('<div/>');
+            var lema = $('<span class="lemma" />')
+                .addClass('lemma-' + z)
+                .data('obj', z)
+                .data('lem', k[z][key]['word'])
+                .text(k[z][key]['word'] + ' (' + k[z][key]['count'] + ')');
+            var excl_span = $('<span class="excl">exc</span>');
+            var geo_span = $('<span class="to-geo">geo</span>');
+            div.append(lema);
+            div.append(excl_span);
+            if (z != 'geo') {
+                div.append('/');
+                div.append(geo_span);
+            }
+            $(obj).append(div);
+
         }
         $('.lemma-' + z).click(function () {
             if ($(this).find('.sentence').length) {
@@ -122,24 +141,22 @@ $(function () {
             word = $(this).html().split('(');
             words = '';
 
-            words = k[z][word[0]].text.join(', ');
+            words = k[z][$.trim(word[0])].text.join(', ');
             $(this).append('<div class="sentence">' + words + '</div>')
         });
 
         var excl = $('.excl');
         excl.unbind('click');
-        excl.bind('click', function () {
+        excl.bind('click', exclClick);
 
-        });
         var geo = $('.to-geo');
         geo.unbind('click');
-        geo.bind('click', function () {
-
-        });
+        geo.bind('click', to_geoClick);
 
     }
 
     $('.stop-btn').on('click', function () {
+        $('.work-btn').removeAttr('disabled');
         is_stop = true;
     });
     $('.work-btn').on('click', function (e) {
@@ -148,33 +165,107 @@ $(function () {
         sendReq();
     });
 
-    $('.excluded_input').on('change', function () {
-        var data = $('.filter-wrap form').serialize();
-        $.ajax({
-            method: "POST",
-            data: data || {excluded_words: '#'},
-            success: function (resp) {
-                console.log(resp);
-            }
-        });
-    });
-    $('.geo_reg_input,.geo_input').on('change', function () {
-        var data = $('.filter-wrap form').serialize();
-        $.ajax({
-            method: "POST",
-            data: data || {include_geo: '#'},
-            success: function (resp) {
-                console.log(resp);
-            }
-        });
-    });
+    /*    $('.excluded_input').on('change', function () {
+            var data = $('.filter-wrap form').serialize();
+            $.ajax({
+                method: "POST",
+                data: data || {excluded_words: '#'},
+                success: function (resp) {
+                    // console.log(resp);
+                }
+            });
+        });*/
 
-    $('.geo_slect').on('change', function () {
+    /*$('.geo_reg_input,.geo_input').on('change', function () {
+        var data = $('.filter-wrap form').serializeArray();
+        data.push({name: "working", value: 'filter'});
+        $.ajax({
+            method: "POST",
+            data: data || {working: 'filter', include_geo: '#'},
+            success: function (resp) {
+                console.log(resp);
+            }
+        });
+    });*/
+
+    /*$('.geo_slect').on('change', function () {
         if (!$(this).is(':checked')) {
             $.ajax({
                 method: "POST",
                 data: {is_geo_data: '#'}
             });
         }
-    });
+    });*/
+    function checkIdentical(word) {
+        var p = false;
+
+        $('.excluded-rem div label').each(function () {
+            var w = $(this).html();
+            if (w == word) {
+                p = true;
+            }
+        });
+        return p;
+    }
+
+    function exclClick() {
+        var lem = $(this).siblings('.lemma').data('lem');
+        if (checkIdentical(lem)) return;
+        var excluded = $('.excluded-rem');
+        var ex_count = excluded.find('input').length;
+        ex_count++;
+        var input = $('<input type="checkbox" />')
+            .addClass('excluded_input')
+            .attr('id', 'ex_' + ex_count)
+            .attr('name', 'excluded_words' + ex_count)
+            .attr('checked', 'checked');
+        var label = $('<label />').attr('for', 'ex_' + ex_count).html(lem);
+        var div = $('<div/>');
+
+        input.appendTo(div);
+        label.appendTo(div);
+        div.appendTo(excluded);
+
+        $(this).parent().fadeOut(0);
+
+        $.ajax({
+            method: "POST",
+            data: {working: 'addExc', word: lem},
+            success: function (resp) {
+                console.log(resp);
+            }
+        });
+    }
+
+    function to_geoClick() {
+        var excluded = $('.geo-wrap');
+        var lem = $(this).siblings('.lemma').data('lem');
+        var $this = $(this);
+        $.ajax({
+            method: "POST",
+            data: {working: 'addGeo', word: lem},
+            success: function (geo_id) {
+                var input = $('<input type="checkbox" />')
+                    .addClass('geo_input')
+                    .attr('id', 'geo_' + geo_id)
+                    .attr('name', 'include_geo' + geo_id)
+                    .attr('checked', 'checked');
+                var label = $('<label />').attr('for', 'geo_' + geo_id).html(lem);
+                var div = $('<div/>');
+
+                input.appendTo(div);
+                label.appendTo(div);
+                div.appendTo(excluded);
+
+                var geo = $this.parent().clone();
+                geo.find('.lemma-lems').removeClass('lemma-lems').addClass('lemma-geo').data('obj', 'geo');
+                geo.appendTo('.geo-lems');
+                $this.parent().fadeOut(0);
+
+            }
+        });
+
+
+    }
+
 });

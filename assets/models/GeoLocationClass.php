@@ -5,7 +5,7 @@
      * Date: 16.02.2018
      * Time: 15:17
      */
-
+    namespace models;
     /**
      * Class GeoLocation
      */
