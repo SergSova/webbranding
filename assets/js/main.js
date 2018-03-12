@@ -1,77 +1,4 @@
 $(function () {
-    function get_resp(resp) {
-        // console.log(resp);
-        console.log($(resp).find('.var-dump').html());
-        obj = $(resp);
-
-        $('.lems-wrap').html(obj.find('.lems-wrap').html());
-        $('.texts').html(obj.find('.texts').html());
-
-        $('.lems-wrap .add-exception').bind('click', addException);
-        $('.except-rem a').bind('click', delExcept);
-        $('.geo-rem a').bind('click', delGeo);
-        $('.texts .del-text').bind('click', delText);
-        $('.lem-text .klem').bind('click', klemClick);
-    }
-
-    function ajaxReq(data) {
-        $.ajax({
-            method: 'post',
-            data: data,
-            success: get_resp
-        });
-    }
-
-    function klemClick(e) {
-        e.preventDefault(e);
-        var _this = $(this);
-        var data = {'klem': _this.data('value'), 'working': 'Work'};
-        ajaxReq(data);
-    }
-
-    function addException(e) {
-        e.preventDefault(e);
-        var _this = $(this);
-        var data = {'exception': _this.data('exception'), 'working': 'Work'};
-        ajaxReq(data);
-    }
-
-    function delText(e) {
-        e.preventDefault(e);
-        var _this = $(this);
-        var data = {'text_del_id': _this.data('id'), 'working': 'Clear'};
-        ajaxReq(data);
-    }
-
-    function delGeo(e) {
-        e.preventDefault(e);
-        var _this = $(this);
-        var data = {'geo_del_id': _this.data('id'), 'working': 'Clear'};
-        ajaxReq(data);
-    }
-
-    function delExcept(e) {
-        e.preventDefault(e);
-        var _this = $(this);
-        var data = {'except_del_id': _this.data('id'), 'working': 'Clear'};
-        ajaxReq(data);
-    }
-
-    function addGeo(e) {
-        e.preventDefault(e);
-        var data = {'geoName': $(this).data('geo'), 'working': 'ChangeToGeo'};
-        ajaxReq(data);
-    }
-
-    $('.lems-wrap .add-exception').bind('click', addException);
-    $('.except-rem a').bind('click', delExcept);
-    $('.geo-rem a').bind('click', delGeo);
-    $('.texts .del-text').bind('click', delText);
-    $('.lem-text .klem').bind('click', klemClick);
-
-    $('.add-geo').bind('click', addGeo);
-
-
     var limit = 100;
     var offset = 0;
     var is_stop = false;
@@ -95,7 +22,7 @@ $(function () {
                         offset = 0;
                         k = JSON.parse(resp);
                         $('.lems').html(' ');
-                        $('.geo-lems').html('');
+                        $('.geo-lems').html(' ');
                         objPArse('lems', '.lems');
                         objPArse('geo', '.geo-lems');
                         console.log('end');
@@ -104,8 +31,8 @@ $(function () {
                     }
                     var message = $('.message-wrap');
                     offset += limit;
-                    message.find('.message').html(offset + ' from ' + textCount);
-                    $('.message-wrap').html(message.html());
+                    message.find('.message').removeClass('clear').removeClass('error').addClass('success').html(offset + ' from ' + textCount);
+                    message.html(message.html());
                 },
                 complete: sendReq
             });
@@ -156,46 +83,70 @@ $(function () {
     }
 
     $('.stop-btn').on('click', function () {
-        $('.work-btn').removeAttr('disabled');
         is_stop = true;
+        $('.work-btn').removeAttr('disabled');
     });
     $('.work-btn').on('click', function (e) {
         is_stop = false;
         e.preventDefault(e);
         sendReq();
     });
-
-    /*    $('.excluded_input').on('change', function () {
-            var data = $('.filter-wrap form').serialize();
-            $.ajax({
-                method: "POST",
-                data: data || {excluded_words: '#'},
-                success: function (resp) {
-                    // console.log(resp);
-                }
-            });
-        });*/
-
-    /*$('.geo_reg_input,.geo_input').on('change', function () {
-        var data = $('.filter-wrap form').serializeArray();
-        data.push({name: "working", value: 'filter'});
+    $('.clear-btn').on('click', function (e) {
+        e.preventDefault(e);
+        is_stop = true;
+        $('.work-btn').removeAttr('disabled');
+        localStorage.clear();
+        sessionStorage.clear();
         $.ajax({
-            method: "POST",
-            data: data || {working: 'filter', include_geo: '#'},
-            success: function (resp) {
-                console.log(resp);
+            method: 'post',
+            data: {working: "Clear"},
+            success: function () {
+                $('.lems').html(' ');
+                $('.geo-lems').html(' ');
+                $('.message').removeClass('error').removeClass('success').addClass('clear').html('All Cleared');
             }
         });
-    });*/
+    });
+    $('.geo_reg_input').on('change', function () {
+        var elem = $(this);
+        if (elem.is(":checked") || this.indeterminate) {
+            elem.siblings('.region-wrap').children('.geo_input').each(function () {
+                $(this).attr('checked', 'checked')
+            });
+        } else
+            elem.siblings('.region-wrap').children('.geo_input').each(function () {
+                $(this).removeAttr('checked');
+            });
+    });
 
-    /*$('.geo_slect').on('change', function () {
-        if (!$(this).is(':checked')) {
-            $.ajax({
-                method: "POST",
-                data: {is_geo_data: '#'}
+    $('.geo_input').on('change', function () {
+        var $this = $(this);
+        var _that = this;
+        $(this).parent().siblings('.geo_reg_input').each(function () {
+            var allChecked = $this.siblings('.geo_input:checked').length;
+            if (_that.checked) {
+                allChecked++;
+            }
+            var allInput = $this.parent().find('.geo_input').length;
+            this.indeterminate = allChecked < allInput && allChecked != 0;
+            this.checked = allChecked == allInput;
+        })
+    });
+
+    $('.geo_slect').on('change', function () {
+        var elem = $(this);
+        if (!elem.is(":checked")) {
+            $('.geo-wrap input').each(function () {
+                // this.checked = false;
+                this.disabled = true;
+            });
+        } else {
+            $('.geo-wrap input').each(function () {
+                this.disabled = false;
             });
         }
-    });*/
+    });
+
     function checkIdentical(word) {
         var p = false;
 
@@ -210,7 +161,12 @@ $(function () {
 
     function exclClick() {
         var lem = $(this).siblings('.lemma').data('lem');
-        if (checkIdentical(lem)) return;
+        if (!confirm('Добавить слово ' + lem + ' в исключение')) {
+            return;
+        }
+        if (checkIdentical(lem)) {
+            return;
+        }
         var excluded = $('.excluded-rem');
         var ex_count = excluded.find('input').length;
         ex_count++;
@@ -238,8 +194,11 @@ $(function () {
     }
 
     function to_geoClick() {
-        var excluded = $('.geo-wrap');
+        var geo_lems = $('.geo-wrap');
         var lem = $(this).siblings('.lemma').data('lem');
+        if (!confirm('Переместить слово ' + lem + ' в гео данные')) {
+            return;
+        }
         var $this = $(this);
         $.ajax({
             method: "POST",
@@ -255,17 +214,15 @@ $(function () {
 
                 input.appendTo(div);
                 label.appendTo(div);
-                div.appendTo(excluded);
+                div.appendTo(geo_lems);
 
                 var geo = $this.parent().clone();
                 geo.find('.lemma-lems').removeClass('lemma-lems').addClass('lemma-geo').data('obj', 'geo');
+                geo.find('.to-geo').remove();
                 geo.appendTo('.geo-lems');
                 $this.parent().fadeOut(0);
-
             }
         });
-
-
     }
-
-});
+})
+;

@@ -25,16 +25,7 @@
     );
 
     $site_name = 'WebBranding';
-
-    /**
-     * @return array
-     */
-    function getTextArray()
-    {
-        $file =  new ReadFile();
-        $arr_obj = $file->read()->getResult();
-        return $arr_obj;
-    }
+    $files = new ReadFile();
 
     try {
         $morphy = new phpMorphy($dir, $lang, $opts);
@@ -42,11 +33,10 @@
 
         switch ($_POST['working']) {
             case 'Work':
-                $arr_obj = getTextArray();
-                $texts = $arr_obj['text'];
-                $res_obj = $_SESSION['res_obj'] ? unserialize($_SESSION['res_obj']) : new Result();
-
-                if ($_POST['offset'] <= count($texts) && $_POST['is_last'] == 'false') {
+                $res_obj = new Result();
+                if ($_POST['is_last'] == 'false') {
+                    $files = new ReadFile();
+                    $texts = $files->getResult();
                     $arr = array_slice($texts, $_POST['offset'], $_POST['limit']);
                 } else {
                     die($res_obj->toJSON());
@@ -77,35 +67,33 @@
                     }
                 }
 
-                $_SESSION['res_obj'] = serialize($res_obj);
+                $res_obj->saveInstance();
 
-                if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                /*
+                 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                     return include 'assets/templates/lems_wrap.tpl';
                 }
+                */
 
                 break;
             case 'Clear':
                 $message = 'all Cleared';
                 $m_class = 'clear';
-                unset($_SESSION['is_geo_data']);
-                unset($_SESSION['res_obj']);
-                unset($_SESSION['exceptions']);
-                unset($_SESSION['geolocation']);
-                unset($_SESSION['excluded']);
-                unset($_SESSION['undefined']);
                 session_unset();
+
                 break;
             case 'addExc':
                 echo $filter_obj->excluded->insert($_POST['word']);
+
                 return;
                 break;
             case 'addGeo':
                 echo $filter_obj->geo_location->insert($_POST['word']);
+
                 return;
                 break;
             default:
                 $title = 'Choose ';
-//                $arr_obj = getTextArray();
         }
     } catch (Exception $e) {
         die('Error occured while creating phpMorphy instance: '.$e->getMessage());
@@ -121,6 +109,9 @@
     </div>
     <div class="filter-wrap">
         <form>
+<!--            <div>-->
+<!--                <h2>Обрабатывать <input type="text" name="count_w" value="200"> из --><?//= $files->getCount()?><!--</h2>-->
+<!--            </div>-->
             <div>
                 <h2>Не показывать слова</h2>
                 <div class="excluded-rem">
@@ -135,7 +126,7 @@
             <div>
                 <h2>Гео данные <span><input class="geo_slect" type="checkbox" name="is_geo_data" checked></span></h2>
                 <div class="geo-wrap">
-                    <?php foreach ($filter_obj->geo_location->getFilters() as $g_id => $g_item): ?>
+                    <?php foreach ($filter_obj->getGeoFilter() as $g_id => $g_item): ?>
                         <div>
                             <label for="geo_reg_<?= $g_id ?>"><?= $filter_obj->geo_location->words[$g_id] ?></label>
                             <input class="geo_reg_input" id="geo_reg_<?= $g_id ?>" name="include_geo[<?= $g_id ?>]" type="checkbox">
@@ -152,25 +143,21 @@
         </form>
     </div>
     <form action="" method="post">
-        <!--        <p><input class="red" type="text" name="exception" placeholder="Добавить исключение"></p>-->
-        <!--        <p><input type="text" name="text" placeholder="Добавить текст"></p>-->
         <input class="work-btn" type="submit" name="working" value="Work">
-        <input type="submit" name="working" value="Clear">
-        <input type="button" class="stop-btn" value="Stop">
+        <input class="clear-btn" type="submit" name="working" value="Clear">
+        <input class="stop-btn" type="button" value="Stop">
         <p><label>
                 <input type="checkbox" name="saved" <?= $_POST['saved'] == 1 ? 'checked' : '' ?> >
                 Записать в базу</label>
         </p>
-
-        <!--        <input type="submit" name="working" value="Clear_session">-->
     </form>
-    <?php //include 'assets/templates/texts.tpl'
-    ?>
-
-    <?php include 'assets/templates/lems_wrap.tpl' ?>
+    <div class="lems-wrap">
+        <div class="lems"></div>
+        <div class="geo-lems"></div>
+    </div>
 </div>
 <script src="assets/js/lib/jquery.min.js"></script>
 <script>
-    textCount = 200; // <?= $arr_obj['count']?>;
+    textCount = <?= $files->getCount()?>;
 </script>
 <script src="assets/js/main.js"></script>

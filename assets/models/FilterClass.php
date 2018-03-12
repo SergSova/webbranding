@@ -20,7 +20,7 @@
         public $excluded;
         public $exceptions;
         public $geo_location;
-        private $_isGeoView;
+        private $_isGeoView = true;
 
         /**
          * Filter constructor.
@@ -31,8 +31,7 @@
             $this->exceptions = Exceptions::getInstance();
             $this->geo_location = GeoLocation::getInstance();
 
-            $this->_isGeoView = $_SESSION['is_geo_data'] ?? $_POST['is_geo_data'];
-            $_SESSION['is_geo_data'] = $this->_isGeoView == '#' ? false : $this->_isGeoView;
+            $this->_isGeoView = $_POST['is_geo_data'] == 'on' ? true : false;
         }
 
         /**
@@ -46,24 +45,27 @@
             if (!$res && isset($_SESSION['excluded_words']) && is_array($_SESSION['excluded_words'])) {
                 $res = in_array($word, $_SESSION['excluded_words']);
             }
-            if (!$res && $this->_isGeoView) {
-                if (isset($_SESSION['include_geo']) && is_array($_SESSION['include_geo'])) {
-                    $res = !in_array($word, $_SESSION['include_geo']) && $this->isGeo($word);
-                } elseif (!$this->_isGeoView) {
-                    $res = in_array($word, $this->geo_location->words);
+            if (!$res && !$this->_isGeoView) {
+                if (!$this->_isGeoView) {
+                    $res = $this->isGeo($word);
                 }
             }
-
+	        if (!$res && $this->isGeo($word) && isset($_SESSION['include_geo']) && is_array($_SESSION['include_geo'])) {
+		        $res = !in_array($word, $_SESSION['include_geo']) && $this->isGeo($word);
+	        }
 
             return $res;
         }
 
-        public
-        function isGeo(
-            $word
-        ) {
+        public function isGeo($word)
+        {
             $res = in_array($word, $this->geo_location->words);
 
             return $res;
+        }
+
+        public function getGeoFilter()
+        {
+            return $this->geo_location->getFilters();
         }
     }

@@ -36,15 +36,19 @@
                     $this->files[] = $file;
                 }
             }
+            $this->read();
+
             return $this;
         }
 
-        public function read()
+        protected function read()
         {
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' && !empty($_SESSION['texts'])) {
+                $this->output = unserialize($_SESSION['texts']);
+            }
             if (!empty($this->output)) {
                 return $this;
             }
-
             if (count($this->files) <= 0) {
                 return;
             }
@@ -107,19 +111,23 @@
             }
             unset($_SESSION['file']);
             unset($_SESSION['file_size']);
+            $_SESSION['texts'] = serialize($this->output);
 
             return $this;
         }
 
         public function getResult()
         {
-            if (empty($this->output)) {
+            if (!$this->getCount()) {
                 return;
             }
 
-            return array(
-                'count' => count($this->output) - 1,
-                'text'  => array_slice($this->output, 1),
-            );
+            return array_slice($this->output, 1);
+
+        }
+
+        public function getCount()
+        {
+            return count($this->output) - 1;
         }
     }

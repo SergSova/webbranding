@@ -21,12 +21,25 @@
             if (isset($this->lems) || isset($this->geo)) {
                 return $this;
             }
-            $this->lems = array();
-            $this->geo = array();
+            if ($_SESSION['res_obj']) {
+                $res_obj = $_SESSION['res_obj'];
+                $this->lems = unserialize($res_obj['lems']);
+                $this->geo = unserialize($res_obj['geo']);
+            } else {
+                $this->lems = array();
+                $this->geo = array();
+            }
 
             return $this;
         }
 
+        public function saveInstance()
+        {
+            $_SESSION['res_obj'] = array(
+                'lems' => serialize($this->lems),
+                'geo'  => serialize($this->geo),
+            );
+        }
 
         public function toJSON()
         {
@@ -117,7 +130,6 @@
             return $lema;
 
         }
-
 
         protected function jSorting(&$arr)
         {
